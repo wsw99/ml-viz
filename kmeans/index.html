@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>K-Means Clustering — ML Visualizer</title>
+  <link rel="stylesheet" href="shared/layout.css" />
+  <!-- Chart.js for WCSS curve -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <header>
+      <h1>K-Means Clustering</h1>
+      <span id="step-counter">Step 1 / 1</span>
+    </header>
+
+    <main>
+      <!-- Left: scatter plot canvas -->
+      <section id="viz-panel">
+        <canvas id="main-canvas" width="520" height="460"></canvas>
+      </section>
+
+      <!-- Right: info panels -->
+      <section id="info-panel">
+
+        <div id="caption">Loading…</div>
+
+        <div id="pseudocode">
+          <h3>Pseudocode</h3>
+          <ol id="pseudo-lines">
+            <li>Initialize K centroids randomly</li>
+            <li>Repeat until convergence:</li>
+            <li>  Assign each point to nearest centroid</li>
+            <li>  Update centroid ← mean of its cluster</li>
+            <li>Return final centroids</li>
+          </ol>
+        </div>
+
+        <div id="params">
+          <h3>Parameters</h3>
+          <div class="param-row"><span>K</span>           <span class="val">3</span></div>
+          <div class="param-row"><span>Iteration</span>   <span class="val" id="p-iter">—</span></div>
+          <div class="param-row"><span>Assigned</span>    <span class="val" id="p-assigned">—</span></div>
+          <div class="param-row"><span>WCSS</span>        <span class="val" id="p-wcss">—</span></div>
+        </div>
+
+        <div id="wcss-container">
+          <h3>WCSS over iterations</h3>
+          <div class="chart-wrap">
+            <canvas id="wcss-chart"></canvas>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <footer>
+      <button id="btn-reset">⏮ Reset</button>
+      <button id="btn-prev">◀ Prev</button>
+      <button id="btn-next">▶ Next</button>
+      <button id="btn-auto">⏩ Auto Play</button>
+      <button id="btn-end">⏭ End</button>
+    </footer>
+
+  </div>
+
+  <!-- Load order matters -->
+  <script src="data/sample_data.js"></script>
+  <script src="js/algorithm.js"></script>
+  <script src="js/visualization.js"></script>
+  <script src="shared/controls.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
