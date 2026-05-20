@@ -4,7 +4,7 @@
 
 **Goal:** Build interactive HTML visualizations that walk through each computational step of machine learning algorithms, making the internal mechanics easy to understand.
 
-**Delivery format:** GitHub repository. The `main` branch holds **only the README and project plan** — no algorithm code. Each algorithm has its own dedicated branch. Run locally via a Python HTTP server — no deployment needed.
+**Delivery format:** GitHub repository, single `main` branch. Each algorithm lives in its own subfolder — clone the repo, `cd` into an algorithm folder, start a local server, and open the browser. No branch switching needed.
 
 **Core experience:** The user clicks a "Next Step" button to advance through the algorithm step by step. Each step updates the visualization, shows a plain-English caption, and highlights the corresponding line in the pseudocode panel.
 
@@ -12,60 +12,54 @@
 
 ## 2. Repository Structure
 
-### Main Branch — README only
+### Top-Level Layout
 
 ```
-README.md          ← Project overview, branch link table, how-to-run instructions
-PROJECT_PLAN.md    ← This document
+ml-visualizer/
+  README.md              ← Project overview, folder table, how-to-run instructions
+  PROJECT_PLAN.md        ← This document
+  kmeans/                ← K-Means Clustering (self-contained)
+  linear-regression/     ← Linear Regression  (self-contained)
+  logistic-regression/   ← Logistic Regression (self-contained)
+  decision-tree/         ← Decision Tree       (self-contained)
+  random-forest/         ← Random Forest       (self-contained)
 ```
 
-> **Rule:** No algorithm code ever goes into `main`. Main is purely for documentation.
+### Per-Algorithm Folder Structure
 
-### Per-Algorithm Branch Structure
-
-Each algorithm lives entirely in its own branch. The branch root is the algorithm's working directory — clone, check out the branch, and serve from there.
+Each algorithm folder is fully self-contained — no shared assets across folders.
 
 ```
-index.html            ← Entry point — open in browser
-shared/
-  controls.js         ← Step controller (Next / Prev / Reset / Auto Play)
-  layout.css          ← Unified layout and animation styles
-js/
-  algorithm.js        ← Algorithm logic in pure JS (no ML libraries)
-  visualization.js    ← Algorithm-specific rendering (D3 / Canvas)
-  main.js             ← Page initialisation
-data/
-  sample_data.js      ← Inline sample dataset (global variable, no fetch needed)
+<algorithm>/
+  index.html            ← Entry point — open in browser
+  shared/
+    controls.js         ← Step controller (Next / Prev / Reset / Auto Play)
+    layout.css          ← Unified layout and animation styles
+  js/
+    algorithm.js        ← Algorithm logic in pure JS (no ML libraries)
+    visualization.js    ← Algorithm-specific rendering (D3 / Canvas)
+    main.js             ← Page initialisation
+  data/
+    sample_data.js      ← Dataset tailored to this algorithm (global variable, no fetch)
 ```
 
-### Branch Naming
+### Algorithm Folders
 
-| Branch | Algorithm |
-|--------|-----------|
-| `main` | README + PROJECT_PLAN only |
-| `kmeans` | K-Means Clustering |
-| `linear-regression` | Linear Regression |
-| `logistic-regression` | Logistic Regression |
-| `decision-tree` | Decision Tree |
-| `random-forest` | Random Forest |
-
-### Shared Code Sync Strategy
-
-Since each algorithm branch is independent, shared utilities (controls, layout) are duplicated across branches. To keep them consistent:
-
-1. Develop and finalise shared code on the **first algorithm branch** (`kmeans`).
-2. When starting a new algorithm branch, cut it from `kmeans`: `git checkout -b linear-regression kmeans` — shared code is inherited automatically.
-3. If shared code changes later, cherry-pick or manually apply the diff to other branches.
-
-### Planned Branches
-
-| Branch | Algorithm | Core Visualization |
+| Folder | Algorithm | Core Visualization |
 |--------|-----------|--------------------|
-| `decision-tree` | Decision Tree | Node splitting process, tree growing step by step |
-| `random-forest` | Random Forest | Bootstrap sampling animation + multi-tree voting |
-| `linear-regression` | Linear Regression | Gradient descent line update, residuals, loss curve |
-| `logistic-regression` | Logistic Regression | Sigmoid curve, decision boundary shifting |
-| `kmeans` | K-Means | Centroid movement, point re-assignment, Voronoi regions |
+| `kmeans/` | K-Means Clustering | Centroid movement, point re-assignment, Voronoi regions |
+| `linear-regression/` | Linear Regression | Gradient descent line update, residuals, loss curve |
+| `logistic-regression/` | Logistic Regression | Sigmoid curve, decision boundary shifting |
+| `decision-tree/` | Decision Tree | Node splitting process, tree growing step by step |
+| `random-forest/` | Random Forest | Bootstrap sampling animation + multi-tree voting |
+
+### Shared Code Policy
+
+`shared/controls.js` and `shared/layout.css` are **duplicated** into every algorithm folder — each folder stays independently runnable without any relative paths that cross folder boundaries.
+
+- Develop and finalise shared code in `kmeans/shared/` first.
+- Copy it into each new algorithm folder when that folder is created.
+- If shared code changes later, manually apply the diff to the other folders.
 
 ---
 
@@ -85,35 +79,37 @@ Since each algorithm branch is independent, shared utilities (controls, layout) 
 
 ### How to Run Locally
 
-Clone the repo, check out the algorithm branch you want, start a local server, and open `localhost:8000`:
+Clone the repo, `cd` into the algorithm folder you want, start a local server, and open `localhost:8000`:
 
 ```bash
 git clone <repo-url>
-cd ml-visualizer
-git checkout kmeans          # switch to the algorithm you want
-python -m http.server 8000   # built into Python, zero install
+cd ml-visualizer/kmeans       # enter the algorithm folder you want
+python -m http.server 8000    # built into Python, zero install
 # open http://localhost:8000 in your browser
 ```
 
-> Alternative: VS Code Live Server extension — right-click `index.html` → Open with Live Server.
+Each algorithm folder is completely independent — no need to checkout any branch. To run a different algorithm, just `cd` into its folder instead.
+
+> Alternative: VS Code Live Server extension — right-click `index.html` inside the algorithm folder → Open with Live Server.
 
 ### Data Loading Convention
 
-Data is written as a global variable in `data/sample_data.js` and loaded with `<script src>`:
+Each algorithm has its **own** `data/sample_data.js` with a dataset tailored to that algorithm. Data is written as a global variable and loaded with `<script src>` — no fetch, no CORS issues:
 
 ```js
 // data/sample_data.js
 window.DATA = [{ x: 1.2, y: 3.4, label: 0 }, ...];
 ```
 
-> This works with both the local server and direct file open (no fetch/CORS issues).
+**Datasets are not shared across algorithms.** K-Means uses Gaussian cluster data; Linear Regression uses noisy linear data; classification algorithms use 2D separable data. Each folder generates its own data independently via a seeded random function.
 
 ### Data Dimensionality Convention
 
 **All algorithms use 2-feature (2D) data only.** This is required for scatter plots, decision boundaries, and region coloring to be drawable:
 
-- K-Means / Regression: synthetic Gaussian cluster data (`make_blobs` style) or noisy linear data.
-- Decision Tree / Random Forest / Logistic Regression: 2-feature slice of Iris, or synthetic 2D separable data.
+- K-Means: synthetic Gaussian cluster data (`make_blobs` style), 3 clusters.
+- Linear Regression: synthetic noisy linear data, single feature vs. target.
+- Logistic Regression / Decision Tree / Random Forest: synthetic 2D binary or multi-class separable data.
 
 ---
 
@@ -327,16 +323,17 @@ Every abbreviation, metric, and concept that appears in any visualization must s
 | D3.js tree layout debugging takes too long | Hand-compute node positions with BFS layering — no D3 hierarchy needed |
 | Custom tree struct → D3 hierarchy format conversion is tedious | Write a `treeToD3()` adapter in `shared/`, reused across decision tree and random forest |
 | Random forest step design is too complex | Simplify to showing 3 tree results and a vote tally — skip full Bootstrap animation |
-| `shared/` merge conflicts when syncing branches | Only ever edit shared code on `main`; algorithm branches only receive `merge main`, never push back |
+| `shared/` code diverges across folders after a fix | Keep a diff checklist — when `controls.js` or `layout.css` changes in one folder, manually apply the same edit to all other folders |
 | Too many steps, animation feels long | Add a "Skip to End" button that jumps directly to the final state |
 
 ---
 
 ## 10. Final Deliverables
 
-- GitHub repository (5 algorithm branches + `main`)
-- Each branch: `index.html` + `shared/` + `js/` + `data/` + `lib/`
-- `main` README: project description, branch link table, run instructions, screenshot previews
+- GitHub repository (`main` branch, single checkout)
+- 5 algorithm folders: `kmeans/`, `linear-regression/`, `logistic-regression/`, `decision-tree/`, `random-forest/`
+- Each folder: `index.html` + `shared/` + `js/` + `data/`
+- Root `README.md`: project description, folder table, per-algorithm run instructions, screenshot previews
 - Optional: screen-recorded GIF per algorithm embedded in README
 
 ---

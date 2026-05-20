@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linear Regression — ML Visualizer</title>
+  <link rel="stylesheet" href="shared/layout.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <header>
+      <h1>Linear Regression &nbsp;<span class="subtitle">线性回归 · Gradient Descent</span></h1>
+      <span id="step-counter">Step 1 / 1</span>
+    </header>
+
+    <main>
+      <!-- Left: scatter plot canvas -->
+      <section id="viz-panel">
+        <canvas id="main-canvas" width="520" height="460"></canvas>
+      </section>
+
+      <!-- Right: info panels -->
+      <section id="info-panel">
+
+        <div id="caption">Loading…</div>
+
+        <!-- KaTeX formula box -->
+        <div id="formula-box" style="display:none">
+          <h3>Formula &nbsp;<span class="subtitle-sm">公式</span></h3>
+          <div id="formula-render"></div>
+        </div>
+
+        <div id="pseudocode">
+          <h3>Pseudocode &nbsp;<span class="subtitle-sm">伪代码</span></h3>
+          <ol id="pseudo-lines">
+            <li>Initialize w, c randomly   (x̄-centered model: ŷ = w·(x−x̄) + c)   &nbsp;<em>随机初始化</em></li>
+            <li>repeat until convergence:   &nbsp;<em>重复直到收敛</em></li>
+            <li>  ŷᵢ = w·(xᵢ−x̄) + c;  eᵢ = ŷᵢ − yᵢ   &nbsp;<em>计算预测值与残差</em></li>
+            <li>  ∂L/∂w = (2/n)Σeᵢ·(xᵢ−x̄);  ∂L/∂c = (2/n)Σeᵢ   &nbsp;<em>计算梯度</em></li>
+            <li>  w ← w − lr·∂L/∂w;  c ← c − lr·∂L/∂c   &nbsp;<em>更新参数</em></li>
+            <li>return w, b = c − w·x̄   (standard form)   &nbsp;<em>返回标准形式参数</em></li>
+          </ol>
+        </div>
+
+        <div id="params">
+          <h3>Parameters &amp; Metrics &nbsp;<span class="subtitle-sm">参数与指标</span></h3>
+          <div class="param-row">
+            <span>Iteration &nbsp;<em>迭代轮次</em></span>
+            <span class="val" id="p-iter">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Weight / Slope — 权重 / 斜率">w &nbsp;<em>权重 / 斜率</em></span>
+            <span class="val" id="p-w">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Bias / Intercept (standard form) — 偏置 / 截距">b &nbsp;<em>偏置 / 截距</em></span>
+            <span class="val" id="p-b">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Gradient w.r.t. w — 损失对斜率的梯度">∂L/∂w &nbsp;<em>斜率梯度</em></span>
+            <span class="val" id="p-dw">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Gradient w.r.t. c (centered intercept) — 损失对截距的梯度">∂L/∂c &nbsp;<em>截距梯度</em></span>
+            <span class="val" id="p-dc">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Mean Squared Error — 均方误差">MSE &nbsp;<em>均方误差</em></span>
+            <span class="val" id="p-mse">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Coefficient of Determination — 决定系数">R² &nbsp;<em>决定系数</em></span>
+            <span class="val" id="p-r2">—</span>
+          </div>
+        </div>
+
+        <div id="loss-container">
+          <h3>Loss Curve &nbsp;<span class="subtitle-sm">损失曲线 / 迭代轮次</span></h3>
+          <div class="chart-wrap">
+            <canvas id="loss-chart"></canvas>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <footer>
+      <button id="btn-reset">⏮ Reset</button>
+      <button id="btn-prev">◀ Prev</button>
+      <button id="btn-next">▶ Next</button>
+      <button id="btn-auto">⏩ Auto Play</button>
+      <button id="btn-end">⏭ End</button>
+    </footer>
+
+  </div>
+
+  <!-- ── Metrics Reference ──────────────────────────────────────── -->
+  <section id="metrics-reference">
+    <h2>Evaluation Metrics Reference &nbsp;<span class="subtitle">评估指标详解</span></h2>
+    <p class="section-sub">All metrics shown in the visualisation above — full names, formulas, and interpretation.</p>
+
+    <div class="metric-grid">
+
+      <!-- MSE -->
+      <div class="metric-card orange">
+        <div class="mc-title">
+          <span class="mc-abbr">MSE</span>
+          <span class="mc-full">Mean Squared Error</span>
+        </div>
+        <div class="mc-cn">均方误差</div>
+        <div class="mc-formula" id="f-mse"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>每个预测值与真实值之差的平方，对 n 个样本取均值。平方操作使大误差受到更重的惩罚，并保证损失恒为非负。<br><br>
+          <strong>直觉：</strong>把每条残差线的长度平方后求平均。残差越长（预测偏差越大），MSE 越高。梯度下降的目标就是最小化 MSE。<br><br>
+          <strong>局限：</strong>MSE 的单位是目标变量单位的平方（如房价平方）。直观解释时通常取平方根得到 RMSE。MSE 对异常值敏感，因为异常点的误差被平方放大。
+        </div>
+        <span class="mc-range">范围：<b>[0, +∞)</b>，越小越好</span>
+      </div>
+
+      <!-- RMSE -->
+      <div class="metric-card blue">
+        <div class="mc-title">
+          <span class="mc-abbr">RMSE</span>
+          <span class="mc-full">Root Mean Squared Error</span>
+        </div>
+        <div class="mc-cn">均方根误差</div>
+        <div class="mc-formula" id="f-rmse"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>MSE 的平方根。与目标变量同量纲，可以直接解释为"平均预测误差的典型大小"。<br><br>
+          <strong>直觉：</strong>如果 RMSE = 1.2，大致意味着模型的典型预测误差约为 ±1.2（原始单位）。<br><br>
+          <strong>与 MSE 的关系：</strong>最小化 MSE 等价于最小化 RMSE，因此梯度下降只需针对 MSE 进行。RMSE 仅用于最终报告，帮助人类理解误差大小。
+        </div>
+        <span class="mc-range">范围：<b>[0, +∞)</b>，越小越好</span>
+      </div>
+
+      <!-- R² -->
+      <div class="metric-card green">
+        <div class="mc-title">
+          <span class="mc-abbr">R²</span>
+          <span class="mc-full">Coefficient of Determination</span>
+        </div>
+        <div class="mc-cn">决定系数</div>
+        <div class="mc-formula" id="f-r2"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>模型解释的方差比例。SS_res 是残差平方和（预测误差），SS_tot 是总方差（用均值预测的误差）。R²=1 说明完美拟合，R²=0 说明模型和直接用均值一样差。<br><br>
+          <strong>直觉：</strong>R² = 0.85 意味着模型解释了目标变量 85% 的变化，剩余 15% 是模型未能捕捉的噪声或非线性成分。<br><br>
+          <strong>注意：</strong>R² 可以为负（当模型比均值预测更差时）。R² 高不代表因果关系，也不代表模型对新数据有好的泛化能力。
+        </div>
+        <span class="mc-range">范围：<b>(-∞, 1]</b>，越接近 1 越好</span>
+      </div>
+
+      <!-- Gradient -->
+      <div class="metric-card red">
+        <div class="mc-title">
+          <span class="mc-abbr">∂L/∂w, ∂L/∂b</span>
+          <span class="mc-full">Gradient of Loss</span>
+        </div>
+        <div class="mc-cn">损失对参数的梯度</div>
+        <div class="mc-formula" id="f-grad"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>梯度指明了 MSE 随参数 w 或 b 增大时的变化速率和方向。梯度为正 → 参数增大会增加损失 → 应减小参数。梯度为负 → 应增大参数。<br><br>
+          <strong>几何意义：</strong>梯度是损失曲面在当前参数处的"上坡"方向。梯度下降沿负梯度方向移动，即向"下坡"走，找到局部（对线性回归即全局）最小值。<br><br>
+          <strong>本可视化使用 x̄ 中心化特征：</strong>ŷ = w·(xᵢ−x̄) + c，这使得 Hessian 矩阵近似对角，条件数降低，梯度下降在 w 和 c 方向上步长均衡，收敛更快。
+        </div>
+        <span class="mc-range">符号决定更新方向，量级影响步长</span>
+      </div>
+
+      <!-- Learning Rate -->
+      <div class="metric-card" style="border-left-color:#6c5ce7">
+        <div class="mc-title">
+          <span class="mc-abbr">lr (α)</span>
+          <span class="mc-full">Learning Rate</span>
+        </div>
+        <div class="mc-cn">学习率</div>
+        <div class="mc-formula" id="f-lr"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>每次梯度下降更新的步长大小。控制参数沿梯度反方向移动多远。本例 lr = 0.06。<br><br>
+          <strong>过大：</strong>参数更新幅度太大，可能越过最小值，导致损失震荡甚至发散（梯度爆炸）。<br>
+          <strong>过小：</strong>收敛极慢，需要大量迭代才能到达最优值。<br><br>
+          <strong>稳定性条件：</strong>对于 MSE 损失，lr 需满足 lr &lt; 2 / λ_max，其中 λ_max 是 Hessian 最大特征值。<br><br>
+          <strong>自适应方法：</strong>实践中常用 Adam、RMSProp 等方法，它们对每个参数自动调整有效学习率，对特征尺度不敏感。
+        </div>
+        <span class="mc-range">本例：<b>lr = 0.06</b>（x̄ 中心化后的稳定值）</span>
+      </div>
+
+    </div>
+  </section>
+
+  <script src="data/sample_data.js"></script>
+  <script src="js/algorithm.js"></script>
+  <script src="js/visualization.js"></script>
+  <script src="shared/controls.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
