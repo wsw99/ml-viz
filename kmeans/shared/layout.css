@@ -1,0 +1,291 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f0f2f5;
+  color: #2d3436;
+  overflow-y: auto;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 14px 18px;
+  gap: 10px;
+}
+
+/* ── Header ── */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; }
+.subtitle    { font-size: 0.85rem; font-weight: 400; color: #636e72; }
+.subtitle-sm { font-size: 0.72rem; font-weight: 400; color: #b2bec3; }
+#pseudocode em, #params em { font-style: normal; font-size: 0.78rem; color: #6c7086; }
+
+#formula-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  flex-shrink: 0;
+}
+#formula-box h3 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #636e72;
+  margin-bottom: 6px;
+}
+#formula-render {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+  overflow-x: auto;
+}
+#step-counter {
+  font-size: 0.82rem;
+  color: #636e72;
+  background: #dfe6e9;
+  padding: 4px 14px;
+  border-radius: 20px;
+}
+
+/* ── Main two-column layout ── */
+main {
+  display: flex;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Left: canvas ── */
+#viz-panel {
+  flex: 0 0 auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#main-canvas { display: block; }
+
+/* ── Right: info column ── */
+#info-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Caption */
+#caption {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  min-height: 58px;
+}
+
+/* Pseudocode */
+#pseudocode {
+  background: #1e1e2e;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  flex-shrink: 0;
+}
+#pseudocode h3 {
+  color: #6c7086;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+#pseudo-lines {
+  list-style: none;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.82rem;
+}
+#pseudo-lines li {
+  padding: 3px 8px;
+  border-radius: 5px;
+  color: #a6adc8;
+  transition: background 0.2s, color 0.2s;
+  white-space: pre;
+}
+#pseudo-lines li.active {
+  background: #313244;
+  color: #a6e3a1;
+  font-weight: 600;
+}
+
+/* Parameters */
+#params {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  flex-shrink: 0;
+}
+#params h3 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #636e72;
+  margin-bottom: 8px;
+}
+.param-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 0.88rem;
+  border-bottom: 1px solid #f0f2f5;
+}
+.param-row:last-child { border-bottom: none; }
+.param-row .val { font-weight: 600; color: #2d3436; }
+
+/* WCSS chart */
+#wcss-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+#wcss-container h3 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #636e72;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+#wcss-container .chart-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* ── Footer buttons ── */
+footer {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 2px 0 4px;
+}
+footer button {
+  padding: 9px 20px;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  background: #fff;
+  color: #2d3436;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.09);
+}
+footer button:hover:not(:disabled) {
+  background: #6c5ce7;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(108,92,231,0.35);
+}
+footer button:disabled { opacity: 0.35; cursor: not-allowed; }
+#btn-next { background: #6c5ce7; color: #fff; }
+#btn-next:hover:not(:disabled) { background: #5649c0; }
+
+/* ── Metrics Reference Section ── */
+#metrics-reference {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px 18px 48px;
+}
+#metrics-reference h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+#metrics-reference .section-sub {
+  font-size: 0.88rem;
+  color: #636e72;
+  margin-bottom: 24px;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+.metric-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  border-left: 4px solid #6c5ce7;
+}
+.metric-card.green  { border-left-color: #2ecc71; }
+.metric-card.orange { border-left-color: #e67e22; }
+.metric-card.blue   { border-left-color: #3498db; }
+.metric-card.red    { border-left-color: #e74c3c; }
+
+.metric-card .mc-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.metric-card .mc-abbr {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d3436;
+}
+.metric-card .mc-full {
+  font-size: 0.8rem;
+  color: #636e72;
+}
+.metric-card .mc-cn {
+  font-size: 0.78rem;
+  color: #b2bec3;
+  margin-bottom: 10px;
+}
+.metric-card .mc-formula {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  text-align: center;
+}
+.metric-card .mc-body {
+  font-size: 0.86rem;
+  line-height: 1.65;
+  color: #4a5568;
+}
+.metric-card .mc-body strong { color: #2d3436; }
+.metric-card .mc-range {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  background: #f0f2f5;
+  border-radius: 6px;
+  padding: 3px 10px;
+  color: #636e72;
+}
+.metric-card .mc-range b { color: #2d3436; }
