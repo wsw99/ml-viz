@@ -4,7 +4,7 @@
 
 **Goal:** Build interactive HTML visualizations that walk through each computational step of machine learning algorithms, making the internal mechanics easy to understand.
 
-**Delivery format:** GitHub repository. The `main` branch holds the README and shared code. Each algorithm has its own branch. Run locally via a Python HTTP server — no deployment needed.
+**Delivery format:** GitHub repository. The `main` branch holds **only the README and project plan** — no algorithm code. Each algorithm has its own dedicated branch. Run locally via a Python HTTP server — no deployment needed.
 
 **Core experience:** The user clicks a "Next Step" button to advance through the algorithm step by step. Each step updates the visualization, shows a plain-English caption, and highlights the corresponding line in the pseudocode panel.
 
@@ -12,41 +12,50 @@
 
 ## 2. Repository Structure
 
-### Main Branch (README + shared code source of truth)
+### Main Branch — README only
 
 ```
-README.md             ← Project overview, branch link table, screenshot previews
-shared/               ← Shared code — single source of truth for all branches
-lib/                  ← Third-party library files (D3, Chart.js, KaTeX)
-index.html.template   ← Unified page template for all algorithms
+README.md          ← Project overview, branch link table, how-to-run instructions
+PROJECT_PLAN.md    ← This document
 ```
+
+> **Rule:** No algorithm code ever goes into `main`. Main is purely for documentation.
 
 ### Per-Algorithm Branch Structure
 
+Each algorithm lives entirely in its own branch. The branch root is the algorithm's working directory — clone, check out the branch, and serve from there.
+
 ```
 index.html            ← Entry point — open in browser
-shared/               ← Shared code (synced from main, see strategy below)
+shared/
   controls.js         ← Step controller (Next / Prev / Reset / Auto Play)
-  step-engine.js      ← Step state machine (snapshot array + index render)
   layout.css          ← Unified layout and animation styles
-  draw-utils.js       ← Common drawing helpers (axes, scatter, color palette)
 js/
   algorithm.js        ← Algorithm logic in pure JS (no ML libraries)
   visualization.js    ← Algorithm-specific rendering (D3 / Canvas)
+  main.js             ← Page initialisation
 data/
-  sample_data.js      ← Inline sample dataset as a global variable
-lib/                  ← Third-party library files (d3.min.js, chart.min.js, katex)
+  sample_data.js      ← Inline sample dataset (global variable, no fetch needed)
 ```
 
-### Shared Code Sync Strategy (Multi-Branch)
+### Branch Naming
 
-Since each algorithm lives in its own branch, `shared/` and `lib/` exist in every branch. To avoid editing five copies whenever shared code changes:
+| Branch | Algorithm |
+|--------|-----------|
+| `main` | README + PROJECT_PLAN only |
+| `kmeans` | K-Means Clustering |
+| `linear-regression` | Linear Regression |
+| `logistic-regression` | Logistic Regression |
+| `decision-tree` | Decision Tree |
+| `random-forest` | Random Forest |
 
-1. **`main` is the single source of truth** for `shared/`, `lib/`, and the page template.
-2. **Algorithm branches are cut from `main`**: `git checkout -b kmeans main` — they inherit shared code automatically.
-3. **To sync updates**: edit `shared/` on `main`, then merge into each algorithm branch: `git checkout kmeans && git merge main`.
+### Shared Code Sync Strategy
 
-> This preserves the one-branch-per-algorithm structure while keeping shared code in one place.
+Since each algorithm branch is independent, shared utilities (controls, layout) are duplicated across branches. To keep them consistent:
+
+1. Develop and finalise shared code on the **first algorithm branch** (`kmeans`).
+2. When starting a new algorithm branch, cut it from `kmeans`: `git checkout -b linear-regression kmeans` — shared code is inherited automatically.
+3. If shared code changes later, cherry-pick or manually apply the diff to other branches.
 
 ### Planned Branches
 
