@@ -34,6 +34,28 @@
     return a.every((c, i) => Math.abs(c.x - b[i].x) < 1e-6 && Math.abs(c.y - b[i].y) < 1e-6);
   }
 
+  // Silhouette Score: s(i) = (b - a) / max(a, b)
+  // a = mean distance to points in same cluster
+  // b = mean distance to points in nearest other cluster
+  function computeSilhouette(points, assignments, k) {
+    const scores = points.map((p, i) => {
+      const ci = assignments[i];
+      const sameCluster  = points.filter((_, j) => j !== i && assignments[j] === ci);
+      if (sameCluster.length === 0) return 0;
+      const a = sameCluster.reduce((s, q) => s + Math.sqrt(dist2(p, q)), 0) / sameCluster.length;
+      let b = Infinity;
+      for (let cj = 0; cj < k; cj++) {
+        if (cj === ci) continue;
+        const other = points.filter((_, j) => assignments[j] === cj);
+        if (other.length === 0) continue;
+        const meanD = other.reduce((s, q) => s + Math.sqrt(dist2(p, q)), 0) / other.length;
+        if (meanD < b) b = meanD;
+      }
+      return (b - a) / Math.max(a, b);
+    });
+    return scores.reduce((s, v) => s + v, 0) / scores.length;
+  }
+
   // Pick the point nearest to a cluster boundary (most "borderline" point).
   // Criterion: smallest ratio of d_nearest / d_second_nearest (closest to 1).
   function pickBorderlinePoint(points, centroids) {
@@ -111,14 +133,31 @@
         `Lines connect each point to its assigned centroid.`,
         2, wcssHistory, iter + 1));
 
+      // ── Mean step: show how new centroid positions are computed ────────
+      const clusterMeans = Array.from({ length: k }, (_, ci) => {
+        const members = data.filter((_, i) => newAssignments[i] === ci);
+        const mx = members.reduce((s, p) => s + p.x, 0) / members.length;
+        const my = members.reduce((s, p) => s + p.y, 0) / members.length;
+        return { ci, x: mx, y: my, n: members.length };
+      });
+      steps.push(snap('mean', assigned, centroids, null,
+        `Iteration ${iter + 1}: compute new centroid = mean of each cluster. ` +
+        `Formula: x̄ = (x₁+x₂+…+xₙ)/n,  ȳ = (y₁+y₂+…+yₙ)/n.  ` +
+        clusterMeans.map(m =>
+          `C${m.ci + 1}(n=${m.n}): (${m.x.toFixed(2)}, ${m.y.toFixed(2)})`
+        ).join('  |  '),
+        3, wcssHistory, iter + 1,
+        { clusterMeans }));
+
       // ── Update step ───────────────────────────────────────────────────
       const newCentroids = updateCentroids(data, newAssignments, k);
       const wcss = computeWCSS(data, newAssignments, newCentroids);
+      const sil  = computeSilhouette(data, newAssignments, k);
       wcssHistory.push(wcss);
       steps.push(snap('update', assigned, newCentroids, centroids,
         `Iteration ${iter + 1}: move each centroid to the mean of its cluster. ` +
-        `Dashed arrows show movement. WCSS = ${wcss.toFixed(2)}.`,
-        3, wcssHistory, iter + 1));
+        `Dashed arrows show movement. WCSS = ${wcss.toFixed(2)},  Silhouette = ${sil.toFixed(3)}.`,
+        3, wcssHistory, iter + 1, { silhouette: sil }));
 
       const done = converged(centroids, newCentroids);
       centroids  = newCentroids;
@@ -127,12 +166,14 @@
     }
 
     // ── Final step: Voronoi regions ───────────────────────────────────────
-    const final = data.map((p, i) => ({ ...p, cluster: assignments[i] }));
+    const final    = data.map((p, i) => ({ ...p, cluster: assignments[i] }));
+    const finalSil = computeSilhouette(data, assignments, k);
     steps.push(snap('final', final, centroids, null,
       `Converged after ${wcssHistory.length} iteration${wcssHistory.length > 1 ? 's' : ''}. ` +
-      `Final WCSS = ${wcssHistory[wcssHistory.length - 1].toFixed(2)}. ` +
-      `Background shows Voronoi regions — every pixel is coloured by its nearest centroid.`,
-      4, wcssHistory, wcssHistory.length));
+      `Final WCSS = ${wcssHistory[wcssHistory.length - 1].toFixed(2)},  ` +
+      `Silhouette = ${finalSil.toFixed(3)} (range −1 to 1, higher is better). ` +
+      `Background shows Voronoi regions — every pixel coloured by its nearest centroid.`,
+      4, wcssHistory, wcssHistory.length, { silhouette: finalSil }));
 
     return steps;
   }

@@ -151,6 +151,54 @@
       });
     }
 
+    _drawMeans(clusterMeans) {
+      const ctx = this.ctx;
+      clusterMeans.forEach(({ ci, x, y, n }) => {
+        const px = this.px(x), py = this.py(y);
+
+        // Crosshair lines
+        ctx.save();
+        ctx.strokeStyle = DARK_PALETTE[ci];
+        ctx.lineWidth   = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath(); ctx.moveTo(px - 18, py); ctx.lineTo(px + 18, py); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px, py - 18); ctx.lineTo(px, py + 18); ctx.stroke();
+        ctx.restore();
+
+        // Diamond marker at mean position
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(px,      py - 11);
+        ctx.lineTo(px + 9,  py);
+        ctx.lineTo(px,      py + 11);
+        ctx.lineTo(px - 9,  py);
+        ctx.closePath();
+        ctx.fillStyle   = DARK_PALETTE[ci];
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth   = 2;
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // Label: (x̄, ȳ)  n=…
+        const lbl = `(${x.toFixed(2)}, ${y.toFixed(2)})  n=${n}`;
+        ctx.save();
+        ctx.font         = 'bold 11px Segoe UI, sans-serif';
+        ctx.textAlign    = 'left';
+        ctx.textBaseline = 'middle';
+        const tw = ctx.measureText(lbl).width;
+        const lx = px + 13, ly = py - 13;
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.beginPath();
+        ctx.roundRect(lx - 3, ly - 8, tw + 8, 16, 3);
+        ctx.fill();
+        ctx.fillStyle = DARK_PALETTE[ci];
+        ctx.fillText(lbl, lx, ly);
+        ctx.restore();
+      });
+    }
+
     _drawDistanceFocus(focusPoint, dists, nearestCi) {
       const ctx = this.ctx;
       const fx  = this.px(focusPoint.x);
@@ -220,6 +268,8 @@
       if (step.centroids.length)                           this._drawCentroids(step.centroids);
       if (step.type === 'distance')
         this._drawDistanceFocus(step.focusPoint, step.focusDistances, step.focusNearest);
+      if (step.type === 'mean')
+        this._drawMeans(step.clusterMeans);
     }
   }
 

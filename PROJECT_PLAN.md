@@ -234,7 +234,71 @@ Each algorithm is verified against a known reference before the visualization is
 
 ---
 
-## 8. Implementation Order and Milestones
+## 8. Evaluation Metrics (All Algorithms)
+
+Every abbreviation, metric, and concept that appears in any visualization must show its full English name and Chinese translation.
+
+### 8.1 K-Means Clustering
+
+| Abbreviation | Full Name | 中文名称 | Description |
+|---|---|---|---|
+| WCSS | Within-Cluster Sum of Squares | 簇内平方和 | Sum of squared distances from each point to its assigned centroid. Lower = tighter clusters. Formula: Σᵢ Σₓ∈Cᵢ ‖x − μᵢ‖² |
+| Silhouette Score | Silhouette Coefficient | 轮廓系数 | For each point: s = (b−a)/max(a,b), where a = mean intra-cluster distance, b = mean distance to nearest other cluster. Range [−1, 1], higher is better. |
+| DBI | Davies-Bouldin Index | 戴维斯-鲍尔丁指数 | Mean ratio of within-cluster scatter to between-cluster separation. Lower is better. |
+| CHI | Calinski-Harabasz Index | 卡林斯基-哈拉巴斯指数 | Ratio of between-cluster dispersion to within-cluster dispersion. Higher is better. |
+| K | Number of clusters | 簇的数量 | Hyperparameter — must be set before running the algorithm. |
+| μᵢ | Centroid of cluster i | 第 i 个簇的质心 | Mean position of all points in cluster i. |
+
+### 8.2 Linear Regression
+
+| Abbreviation | Full Name | 中文名称 | Description |
+|---|---|---|---|
+| MSE | Mean Squared Error | 均方误差 | Mean of squared differences between predicted and actual values. Formula: (1/n)Σ(ŷᵢ − yᵢ)² |
+| RMSE | Root Mean Squared Error | 均方根误差 | Square root of MSE. Same unit as the target variable. Formula: √MSE |
+| MAE | Mean Absolute Error | 平均绝对误差 | Mean of absolute differences. Less sensitive to outliers than MSE. Formula: (1/n)Σ|ŷᵢ − yᵢ| |
+| R² | Coefficient of Determination | 决定系数 | Proportion of variance in y explained by the model. Range [0, 1], higher is better. Formula: 1 − SS_res/SS_tot |
+| w | Weight / Slope | 权重 / 斜率 | Learned parameter — slope of the regression line. |
+| b | Bias / Intercept | 偏置 / 截距 | Learned parameter — y-intercept of the regression line. |
+| ∂L/∂w | Gradient w.r.t. weight | 损失对权重的梯度 | Direction and magnitude of loss change as w changes. Used in gradient descent. |
+| lr | Learning Rate | 学习率 | Step size for gradient descent parameter update. |
+
+### 8.3 Logistic Regression
+
+| Abbreviation | Full Name | 中文名称 | Description |
+|---|---|---|---|
+| Log Loss | Binary Cross-Entropy Loss | 二元交叉熵损失 | Loss for binary classification. Formula: −(1/n)Σ[yᵢ log(ŷᵢ) + (1−yᵢ)log(1−ŷᵢ)] |
+| Accuracy | Classification Accuracy | 准确率 | Fraction of correctly classified points. Formula: (TP+TN)/(TP+TN+FP+FN) |
+| Precision | Precision | 精确率 | Of all predicted positives, how many are truly positive. Formula: TP/(TP+FP) |
+| Recall | Recall / Sensitivity | 召回率 / 灵敏度 | Of all actual positives, how many were found. Formula: TP/(TP+FN) |
+| F1 | F1 Score | F1 分数 | Harmonic mean of Precision and Recall. Formula: 2×P×R/(P+R) |
+| AUC-ROC | Area Under ROC Curve | ROC 曲线下面积 | Probability that the model ranks a positive example higher than a negative one. Range [0, 1]. |
+| σ | Sigmoid Function | Sigmoid 函数 | Maps any real value to (0, 1). Formula: σ(z) = 1/(1+e^−z) |
+| TP / TN / FP / FN | True/False Positive/Negative | 真阳性 / 真阴性 / 假阳性 / 假阴性 | Components of the confusion matrix. |
+
+### 8.4 Decision Tree
+
+| Abbreviation | Full Name | 中文名称 | Description |
+|---|---|---|---|
+| Gini | Gini Impurity | 基尼不纯度 | Probability of misclassifying a randomly chosen element. Formula: 1 − Σ pᵢ². Range [0, 0.5], lower = purer node. |
+| Entropy | Information Entropy | 信息熵 | Measure of disorder. Formula: −Σ pᵢ log₂(pᵢ). Range [0, 1]. |
+| IG | Information Gain | 信息增益 | Reduction in entropy after a split. Formula: H(parent) − Σ wᵢ H(childᵢ) |
+| Accuracy | Classification Accuracy | 准确率 | Same as Logistic Regression above. |
+| Precision / Recall / F1 | — | 精确率 / 召回率 / F1 分数 | Same as Logistic Regression above. |
+| Depth | Tree Depth | 树的深度 | Number of levels from root to deepest leaf. Controls model complexity. |
+
+### 8.5 Random Forest
+
+| Abbreviation | Full Name | 中文名称 | Description |
+|---|---|---|---|
+| OOB Error | Out-of-Bag Error | 袋外误差 | Error rate on samples not included in a tree's bootstrap sample. Free validation estimate. |
+| Feature Importance | Feature Importance | 特征重要性 | Mean decrease in impurity across all trees for each feature. Higher = more influential. |
+| Bootstrap | Bootstrap Sampling | Bootstrap 采样 | Sampling n points with replacement from n training points. Each tree sees ~63% unique samples. |
+| Voting | Majority Vote | 多数投票 | Final prediction = class chosen by the most trees. |
+| Accuracy / Precision / Recall / F1 / AUC-ROC | — | 准确率 / 精确率 / 召回率 / F1 / AUC-ROC | Same as Logistic Regression above. |
+
+---
+
+## 9. Implementation Order and Milestones
 
 | Week | Task | Output |
 |------|------|--------|
