@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ML Algorithm Visualizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f0f2f5;
+      color: #2d3436;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px 64px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    header .sub {
+      font-size: 1rem;
+      color: #636e72;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 28px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-left: 5px solid #dfe6e9;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .card.ready       { border-left-color: #6c5ce7; }
+    .card.coming-soon { opacity: 0.55; cursor: default; pointer-events: none; }
+
+    .card-icon   { font-size: 2rem; line-height: 1; }
+    .card-title  { font-size: 1.05rem; font-weight: 700; }
+    .card-cn     { font-size: 0.82rem; color: #b2bec3; margin-top: -6px; }
+    .card-desc   { font-size: 0.88rem; color: #636e72; line-height: 1.55; }
+    .card-badge  {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 20px;
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+    .badge-ready { background: #dfe6ff; color: #6c5ce7; }
+    .badge-soon  { background: #f0f2f5; color: #b2bec3; }
+
+    .how-to {
+      margin-top: 48px;
+      max-width: 600px;
+      background: #1e1e2e;
+      border-radius: 14px;
+      padding: 20px 24px;
+      color: #a6adc8;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 0.85rem;
+      line-height: 1.8;
+    }
+    .how-to .comment { color: #6c7086; }
+    .how-to .cmd     { color: #a6e3a1; }
+    .how-to .path    { color: #89dceb; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>ML Algorithm Visualizer</h1>
+    <p class="sub">机器学习算法可视化 · 逐步展示每个计算步骤 · 运行于本地浏览器</p>
+  </header>
+
+  <div class="grid">
+
+    <a class="card ready" href="kmeans/index.html">
+      <div class="card-icon">🔵</div>
+      <div class="card-title">K-Means Clustering</div>
+      <div class="card-cn">K 均值聚类</div>
+      <div class="card-desc">质心随机初始化 → 距离计算 → 分配 → 均值更新 → 收敛。含 Voronoi 区域填充与 WCSS / 轮廓系数。</div>
+      <span class="card-badge badge-ready">✓ Ready</span>
+    </a>
+
+    <a class="card ready" href="linear-regression/index.html">
+      <div class="card-icon">📈</div>
+      <div class="card-title">Linear Regression</div>
+      <div class="card-cn">线性回归</div>
+      <div class="card-desc">梯度下降逐步拟合回归线。残差可视化 → 梯度计算 → 参数更新 → 损失曲线。含 MSE / RMSE / R²。</div>
+      <span class="card-badge badge-ready">✓ Ready</span>
+    </a>
+
+    <div class="card coming-soon">
+      <div class="card-icon">🔴</div>
+      <div class="card-title">Logistic Regression</div>
+      <div class="card-cn">逻辑回归</div>
+      <div class="card-desc">Sigmoid 函数、决策边界动态移动、二元交叉熵损失。含混淆矩阵与 AUC-ROC。</div>
+      <span class="card-badge badge-soon">Coming soon</span>
+    </div>
+
+    <div class="card coming-soon">
+      <div class="card-icon">🌳</div>
+      <div class="card-title">Decision Tree</div>
+      <div class="card-cn">决策树</div>
+      <div class="card-desc">Gini 不纯度逐节点计算、最优分裂特征选择、树结构动态生长、决策区域可视化。</div>
+      <span class="card-badge badge-soon">Coming soon</span>
+    </div>
+
+    <div class="card coming-soon">
+      <div class="card-icon">🌲</div>
+      <div class="card-title">Random Forest</div>
+      <div class="card-cn">随机森林</div>
+      <div class="card-desc">Bootstrap 采样动画、多棵树并行训练、多数投票聚合、袋外误差（OOB）估计。</div>
+      <span class="card-badge badge-soon">Coming soon</span>
+    </div>
+
+  </div>
+
+  <div class="how-to">
+    <span class="comment"># 运行任意算法（示例）</span><br>
+    <span class="cmd">cd</span> <span class="path">ml-visualizer/kmeans</span><br>
+    <span class="cmd">python -m http.server 8000</span><br>
+    <span class="comment"># 或从根目录启动，点击上方卡片直接进入</span><br>
+    <span class="cmd">cd</span> <span class="path">ml-visualizer</span><br>
+    <span class="cmd">python -m http.server 8000</span>
+  </div>
+
+</body>
+</html>
