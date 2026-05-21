@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logistic Regression — ML Visualizer</title>
+  <link rel="stylesheet" href="shared/layout.css" />
+  <style>
+    /* Logistic regression has more params — display in 2 columns to save vertical space */
+    #params .param-rows {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 12px;
+    }
+    #params .param-row { font-size: 0.82rem; padding: 2px 0; }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <header>
+      <h1>Logistic Regression &nbsp;<span class="subtitle">逻辑回归 · Binary Classification</span></h1>
+      <span id="step-counter">Step 1 / 1</span>
+    </header>
+
+    <main>
+      <section id="viz-panel">
+        <canvas id="main-canvas" width="520" height="460"></canvas>
+      </section>
+
+      <section id="info-panel">
+
+        <div id="caption">Loading…</div>
+
+        <div id="formula-box" style="display:none">
+          <h3>Formula &nbsp;<span class="subtitle-sm">公式</span></h3>
+          <div id="formula-render"></div>
+        </div>
+
+        <div id="pseudocode">
+          <h3>Pseudocode &nbsp;<span class="subtitle-sm">伪代码</span></h3>
+          <ol id="pseudo-lines">
+            <li>Initialize w₁, w₂, b randomly   &nbsp;<em>随机初始化参数</em></li>
+            <li>repeat until convergence:   &nbsp;<em>重复直到收敛</em></li>
+            <li>  ŷᵢ = σ(w₁x₁ᵢ + w₂x₂ᵢ + b)   &nbsp;<em>计算预测概率</em></li>
+            <li>  ∂L/∂wₖ = (1/n)Σ(ŷᵢ−yᵢ)xₖᵢ;  ∂L/∂b = (1/n)Σ(ŷᵢ−yᵢ)   &nbsp;<em>计算梯度</em></li>
+            <li>  w₁,w₂,b ← w₁,w₂,b − lr · ∇L   &nbsp;<em>更新参数</em></li>
+            <li>return w₁, w₂, b   &nbsp;<em>返回最终参数</em></li>
+          </ol>
+        </div>
+
+        <div id="params">
+          <h3>Parameters &amp; Metrics &nbsp;<span class="subtitle-sm">参数与指标</span></h3>
+          <div class="param-rows">
+            <div class="param-row">
+              <span>Iter &nbsp;<em>轮次</em></span>
+              <span class="val" id="p-iter">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Predicted probability (highlighted point) — 高亮点预测概率">σ(z) &nbsp;<em>预测概率</em></span>
+              <span class="val" id="p-sigma">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Weight for x₁ — x₁ 权重">w₁ &nbsp;<em>x₁ 权重</em></span>
+              <span class="val" id="p-w1">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Weight for x₂ — x₂ 权重">w₂ &nbsp;<em>x₂ 权重</em></span>
+              <span class="val" id="p-w2">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Bias — 偏置">b &nbsp;<em>偏置</em></span>
+              <span class="val" id="p-b">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Binary cross-entropy loss — 交叉熵损失">Log Loss &nbsp;<em>损失</em></span>
+              <span class="val" id="p-loss">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Accuracy — 准确率">Accuracy &nbsp;<em>准确率</em></span>
+              <span class="val" id="p-acc">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Gradient w.r.t. w₁ — w₁ 梯度">∂L/∂w₁ &nbsp;<em>w₁ 梯度</em></span>
+              <span class="val" id="p-dw1">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Gradient w.r.t. w₂ — w₂ 梯度">∂L/∂w₂ &nbsp;<em>w₂ 梯度</em></span>
+              <span class="val" id="p-dw2">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Gradient w.r.t. b — 偏置梯度">∂L/∂b &nbsp;<em>偏置梯度</em></span>
+              <span class="val" id="p-db">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Precision — 精确率">Precision &nbsp;<em>精确率</em></span>
+              <span class="val" id="p-precision">—</span>
+            </div>
+            <div class="param-row">
+              <span title="Recall — 召回率">Recall &nbsp;<em>召回率</em></span>
+              <span class="val" id="p-recall">—</span>
+            </div>
+            <div class="param-row" style="grid-column: 1 / -1;">
+              <span title="F1 Score — F1 分数">F1 Score &nbsp;<em>F1 分数</em></span>
+              <span class="val" id="p-f1">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="loss-container">
+          <h3>Loss Curve &nbsp;<span class="subtitle-sm">损失曲线 / 迭代轮次</span></h3>
+          <div class="chart-wrap">
+            <canvas id="loss-chart"></canvas>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <footer>
+      <button id="btn-reset">⏮ Reset</button>
+      <button id="btn-prev">◀ Prev</button>
+      <button id="btn-next">▶ Next</button>
+      <button id="btn-auto">⏩ Auto Play</button>
+      <button id="btn-end">⏭ End</button>
+    </footer>
+
+  </div>
+
+  <!-- ── Metrics Reference ──────────────────────────────────────────────── -->
+  <section id="metrics-reference">
+    <h2>Evaluation Metrics Reference &nbsp;<span class="subtitle">评估指标详解</span></h2>
+    <p class="section-sub">All metrics shown in the visualisation above — full names, formulas, and interpretation.</p>
+
+    <div class="metric-grid">
+
+      <div class="metric-card orange">
+        <div class="mc-title"><span class="mc-abbr">Log Loss</span><span class="mc-full">Binary Cross-Entropy Loss</span></div>
+        <div class="mc-cn">二元交叉熵损失</div>
+        <div class="mc-formula" id="f-logloss"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>对每个样本，惩罚"高置信度但预测错误"的情况。如果模型以概率 0.99 预测 y=1，但实际 y=0，则损失 = -log(0.01) ≈ 4.6，极大。<br><br>
+          <strong>直觉：</strong>最大似然估计的负对数。最小化 Log Loss 等价于找最可能生成当前训练数据的参数。<br><br>
+          <strong>梯度下降：</strong>∂L/∂w = (1/n)Σ(ŷᵢ−yᵢ)xᵢ，与线性回归的 MSE 梯度形式完全相同——这是 Sigmoid + 交叉熵的优雅配合。
+        </div>
+        <span class="mc-range">范围：<b>[0, +∞)</b>，越小越好</span>
+      </div>
+
+      <div class="metric-card blue">
+        <div class="mc-title"><span class="mc-abbr">σ(z)</span><span class="mc-full">Sigmoid Function</span></div>
+        <div class="mc-cn">Sigmoid 函数</div>
+        <div class="mc-formula" id="f-sigmoid"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>将任意实数 z 压缩到 (0, 1)，输出解释为"属于正类的概率"。z → +∞ 时 σ → 1，z → −∞ 时 σ → 0，z=0 时 σ=0.5。<br><br>
+          <strong>决策边界：</strong>σ(z) = 0.5 当 z = 0，即 w₁x₁ + w₂x₂ + b = 0。这条直线就是可视化中的紫色边界线。<br><br>
+          <strong>可视化中的高亮点：</strong>每步高亮的是最靠近边界的点（|σ(z)−0.5| 最小），这是模型最"不确定"的样本。
+        </div>
+        <span class="mc-range">范围：<b>(0, 1)</b></span>
+      </div>
+
+      <div class="metric-card green">
+        <div class="mc-title"><span class="mc-abbr">Accuracy</span><span class="mc-full">Classification Accuracy</span></div>
+        <div class="mc-cn">准确率</div>
+        <div class="mc-formula" id="f-accuracy"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>正确分类的样本占总样本的比例。TP=真阳性，TN=真阴性，FP=假阳性，FN=假阴性。<br><br>
+          <strong>局限：</strong>类别不平衡时（如 95% 负样本），全部预测为负类也能达到 95% 准确率，但模型毫无意义。这时需要 Precision / Recall / F1。
+        </div>
+        <span class="mc-range">范围：<b>[0, 1]</b>，越接近 1 越好</span>
+      </div>
+
+      <div class="metric-card red">
+        <div class="mc-title"><span class="mc-abbr">Precision / Recall / F1</span><span class="mc-full">Classification Quality Metrics</span></div>
+        <div class="mc-cn">精确率 / 召回率 / F1 分数</div>
+        <div class="mc-formula" id="f-prf"></div>
+        <div class="mc-body">
+          <strong>Precision（精确率）：</strong>预测为正类中真正是正类的比例。高 Precision → 少误报（FP 少）。<br>
+          <strong>Recall（召回率）：</strong>所有正类样本中被正确找到的比例。高 Recall → 少漏报（FN 少）。<br><br>
+          <strong>Precision-Recall 权衡：</strong>降低分类阈值 → Recall ↑ 但 Precision ↓；提高阈值 → Precision ↑ 但 Recall ↓。<br><br>
+          <strong>F1：</strong>Precision 和 Recall 的调和平均，是两者的综合衡量，适合类别不平衡时作为主指标。
+        </div>
+        <span class="mc-range">三者范围均：<b>[0, 1]</b>，越接近 1 越好</span>
+      </div>
+
+      <div class="metric-card" style="border-left-color:#6c5ce7">
+        <div class="mc-title"><span class="mc-abbr">Decision Boundary</span><span class="mc-full">Linear Decision Boundary</span></div>
+        <div class="mc-cn">线性决策边界</div>
+        <div class="mc-formula" id="f-boundary"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>将特征空间划分为正类区域和负类区域的直线（2D）/ 超平面（多维）。边界的一侧 σ(z) > 0.5（预测正类），另一侧 σ(z) < 0.5（预测负类）。<br><br>
+          <strong>可视化：</strong>最终步骤中，背景颜色表示模型对每个区域的预测类别——蓝色 = 正类，红色 = 负类。✓ 表示正确分类，✗ 表示错误分类。<br><br>
+          <strong>局限：</strong>逻辑回归只能学习线性边界。若数据线性不可分（如 XOR 问题），需要特征工程或神经网络。
+        </div>
+        <span class="mc-range">本例：<b>lr = 0.2</b>（x̄ 中心化特征）</span>
+      </div>
+
+    </div>
+  </section>
+
+  <script src="data/sample_data.js"></script>
+  <script src="js/algorithm.js"></script>
+  <script src="js/visualization.js"></script>
+  <script src="shared/controls.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
