@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decision Tree — ML Visualizer</title>
+  <link rel="stylesheet" href="shared/layout.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <header>
+      <h1>Decision Tree &nbsp;<span class="subtitle">决策树 · CART · Gini Impurity</span></h1>
+      <span id="step-counter">Step 1 / 1</span>
+    </header>
+
+    <main>
+      <section id="viz-panel">
+        <canvas id="main-canvas" width="520" height="460"></canvas>
+      </section>
+
+      <section id="info-panel">
+
+        <div id="caption">Loading…</div>
+
+        <div id="formula-box" style="display:none">
+          <h3>Formula &nbsp;<span class="subtitle-sm">公式</span></h3>
+          <div id="formula-render"></div>
+        </div>
+
+        <div id="pseudocode">
+          <h3>Pseudocode &nbsp;<span class="subtitle-sm">伪代码</span></h3>
+          <ol id="pseudo-lines">
+            <li>def buildTree(data, region, depth):   &nbsp;<em>递归建树</em></li>
+            <li>  if depth==maxDepth or pure(data): → Leaf   &nbsp;<em>终止条件</em></li>
+            <li>  Gini_P = 2·p₁·(1−p₁)   &nbsp;<em>计算当前节点不纯度</em></li>
+            <li>  for (feat, t): ΔGini = Gini_P − |L|/n·Gini_L − |R|/n·Gini_R   &nbsp;<em>遍历所有分裂候选</em></li>
+            <li>  apply best (feat, t) → left, right subsets   &nbsp;<em>应用最优分裂</em></li>
+            <li>  left  ← buildTree(left,  depth+1)   &nbsp;<em>递归左子树</em></li>
+            <li>  right ← buildTree(right, depth+1)   &nbsp;<em>递归右子树</em></li>
+            <li>  return Node(feat, t, left, right)   &nbsp;<em>返回节点</em></li>
+          </ol>
+        </div>
+
+        <div id="params">
+          <h3>Node Info &amp; Metrics &nbsp;<span class="subtitle-sm">节点信息与指标</span></h3>
+          <div class="param-row">
+            <span>Depth &nbsp;<em>深度</em></span>
+            <span class="val" id="p-depth">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Samples in current node — 当前节点样本数">n &nbsp;<em>样本数</em></span>
+            <span class="val" id="p-n">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Class-1 count in node — 正类数">n₁ &nbsp;<em>正类数</em></span>
+            <span class="val" id="p-n1">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Gini impurity of current node — 当前节点 Gini 不纯度">Gini &nbsp;<em>不纯度</em></span>
+            <span class="val" id="p-gini">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Best split feature — 最优分裂特征">Split feat &nbsp;<em>分裂特征</em></span>
+            <span class="val" id="p-feature">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Split threshold — 分裂阈值">Threshold &nbsp;<em>分裂阈值</em></span>
+            <span class="val" id="p-threshold">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Gini gain from this split — 此次分裂的 Gini 增益">ΔGini &nbsp;<em>Gini 增益</em></span>
+            <span class="val" id="p-gain">—</span>
+          </div>
+          <div class="param-row">
+            <span title="Final accuracy — 最终准确率">Accuracy &nbsp;<em>准确率</em></span>
+            <span class="val" id="p-acc">—</span>
+          </div>
+        </div>
+
+        <div id="loss-container">
+          <h3>Gini per Node &nbsp;<span class="subtitle-sm">各节点 Gini 不纯度 &nbsp;
+            <span style="color:#6c5ce7">■ 内部节点</span> &nbsp;
+            <span style="color:#00b894">■ 叶节点</span>
+          </span></h3>
+          <div class="chart-wrap">
+            <canvas id="loss-chart"></canvas>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <footer>
+      <button id="btn-reset">⏮ Reset</button>
+      <button id="btn-prev">◀ Prev</button>
+      <button id="btn-next">▶ Next</button>
+      <button id="btn-auto">⏩ Auto Play</button>
+      <button id="btn-end">⏭ End</button>
+    </footer>
+
+  </div>
+
+  <!-- ── Metrics Reference ──────────────────────────────────────────────── -->
+  <section id="metrics-reference">
+    <h2>Decision Tree Concepts Reference &nbsp;<span class="subtitle">决策树核心概念详解</span></h2>
+    <p class="section-sub">Gini impurity, splitting criterion, depth control, and decision boundaries — all concepts shown in the visualisation above.</p>
+
+    <div class="metric-grid">
+
+      <div class="metric-card orange">
+        <div class="mc-title"><span class="mc-abbr">Gini Impurity</span><span class="mc-full">Node Impurity Measure</span></div>
+        <div class="mc-cn">节点不纯度</div>
+        <div class="mc-formula" id="f-gini"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>衡量节点中类别的混杂程度。Gini=0 表示节点纯净（全是一个类别）；Gini=0.5 表示最混杂（二分类各占50%）。<br><br>
+          <strong>直觉：</strong>随机从节点中取两个样本，它们属于不同类别的概率。Gini = P(类别不同) = 1 − Σpₖ²。<br><br>
+          <strong>可视化：</strong>柱状图显示每个访问节点的 Gini 值。从根节点（≈0.5，混杂）到叶节点（≈0，纯净），Gini 逐步下降。
+        </div>
+        <span class="mc-range">范围：<b>[0, 0.5]</b>（二分类），越小越好</span>
+      </div>
+
+      <div class="metric-card blue">
+        <div class="mc-title"><span class="mc-abbr">ΔGini</span><span class="mc-full">Gini Gain / Impurity Reduction</span></div>
+        <div class="mc-cn">Gini 增益 / 不纯度下降</div>
+        <div class="mc-formula" id="f-gain"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>对每个候选分裂（特征 + 阈值），计算分裂后加权平均 Gini 比父节点下降了多少。CART 每步选择 ΔGini 最大的分裂。<br><br>
+          <strong>权重：</strong>子节点按样本量加权——大子节点的 Gini 权重更高，防止偏向产生极小但纯净子节点的无意义分裂。<br><br>
+          <strong>可视化：</strong>"Split feat + Threshold + ΔGini" 参数在 split 步骤中显示，黄色虚线为待应用的候选分裂边界。
+        </div>
+        <span class="mc-range">范围：<b>[0, 0.5]</b>，越大越好</span>
+      </div>
+
+      <div class="metric-card green">
+        <div class="mc-title"><span class="mc-abbr">CART</span><span class="mc-full">Classification and Regression Trees</span></div>
+        <div class="mc-cn">分类回归树算法</div>
+        <div class="mc-formula" id="f-leaf"></div>
+        <div class="mc-body">
+          <strong>算法流程：</strong>从根节点开始，对每个节点：① 若满足终止条件（纯净或达到最大深度）→ 创建叶节点，预测多数类；② 否则遍历所有特征和候选阈值，选 ΔGini 最大的分裂，将数据划入左右子节点，递归。<br><br>
+          <strong>二元分裂：</strong>CART 每次只做二叉分裂（左：feat ≤ t，右：feat > t），生成完全二叉树。<br><br>
+          <strong>本例：</strong>max_depth=2，XOR 数据，最优分裂序列：x1≤~5 → x2≤~5（左右各一次），形成 4 个矩形区域。
+        </div>
+        <span class="mc-range">叶节点数：<b>≤ 2ᵈ</b>（d=最大深度）</span>
+      </div>
+
+      <div class="metric-card red">
+        <div class="mc-title"><span class="mc-abbr">Depth &amp; Overfitting</span><span class="mc-full">Model Complexity Control</span></div>
+        <div class="mc-cn">深度与过拟合</div>
+        <div class="mc-formula" id="f-depth"></div>
+        <div class="mc-body">
+          <strong>深度与复杂度：</strong>每增加一层深度，叶节点数量最多翻倍。深度越大，模型越复杂，越容易过拟合训练数据（在训练集上完美但在测试集上表现差）。<br><br>
+          <strong>欠拟合 vs 过拟合：</strong>depth=1（单一分裂）通常欠拟合；depth=n（每个样本一个叶节点）完全过拟合。<br><br>
+          <strong>剪枝：</strong>限制 max_depth 是最简单的正则化方式。其他方法包括最小叶节点样本数、代价复杂度剪枝（cost-complexity pruning）等。
+        </div>
+        <span class="mc-range">本例：<b>max_depth = 2</b></span>
+      </div>
+
+      <div class="metric-card" style="border-left-color:#6c5ce7">
+        <div class="mc-title"><span class="mc-abbr">Decision Boundary</span><span class="mc-full">Axis-Aligned Piecewise Boundary</span></div>
+        <div class="mc-cn">轴对齐分段决策边界</div>
+        <div class="mc-formula" id="f-accuracy"></div>
+        <div class="mc-body">
+          <strong>特点：</strong>决策树的边界始终平行于特征轴（水平或垂直线段），将特征空间划分为矩形区域。与逻辑回归的线性边界不同，决策树可以学习任意复杂的非线性边界（通过增加深度）。<br><br>
+          <strong>非线性优势：</strong>本例数据对逻辑回归线性不可分（4 个簇无法用一条直线完美分开），但深度为 2 的决策树即可完美分类。<br><br>
+          <strong>可视化：</strong>紫色实线 = 已应用的分裂边界；黄色虚线 = 待应用的候选分裂；蓝/红背景 = 最终预测区域。
+        </div>
+        <span class="mc-range">本例：<b>4 个矩形叶区域</b></span>
+      </div>
+
+    </div>
+  </section>
+
+  <script src="data/sample_data.js"></script>
+  <script src="js/algorithm.js"></script>
+  <script src="js/visualization.js"></script>
+  <script src="shared/controls.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
