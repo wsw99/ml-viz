@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Random Forest — ML Visualizer</title>
+  <link rel="stylesheet" href="shared/layout.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <header>
+      <h1>Random Forest &nbsp;<span class="subtitle">随机森林 · Bootstrap · Majority Vote</span></h1>
+      <span id="step-counter">Step 1 / 1</span>
+    </header>
+
+    <main>
+      <section id="viz-panel">
+        <canvas id="main-canvas" width="520" height="460"></canvas>
+      </section>
+
+      <section id="info-panel">
+
+        <div id="caption">Loading…</div>
+
+        <div id="formula-box" style="display:none">
+          <h3>Formula &nbsp;<span class="subtitle-sm">公式</span></h3>
+          <div id="formula-render"></div>
+        </div>
+
+        <div id="pseudocode">
+          <h3>Pseudocode &nbsp;<span class="subtitle-sm">伪代码</span></h3>
+          <ol id="pseudo-lines">
+            <li>for t = 1 to n_trees:   &nbsp;<em>对每棵树</em></li>
+            <li>  S_t ← bootstrap(D, n)   &nbsp;<em>有放回地抽取 n 个样本</em></li>
+            <li>  T_t ← CART(S_t, maxDepth)   &nbsp;<em>在子集上训练决策树</em></li>
+            <li>  OOB_t ← D ∖ S_t   &nbsp;<em>袋外样本（未被选中的点）</em></li>
+            <li>def predict(x):   &nbsp;<em>预测新样本</em></li>
+            <li>  votes ← [T_t(x) for t]   &nbsp;<em>每棵树各自预测</em></li>
+            <li>  return majority_vote(votes)   &nbsp;<em>多数票决定最终预测</em></li>
+            <li>OOB_err ← avg error on OOB sets   &nbsp;<em>袋外误差 = 免费验证集</em></li>
+          </ol>
+        </div>
+
+        <div id="params">
+          <h3>Forest Info &amp; Metrics &nbsp;<span class="subtitle-sm">森林信息与指标</span></h3>
+          <div class="param-row">
+            <span title="Number of trees trained so far — 已训练的树数">Trees &nbsp;<em>已训练树数</em></span>
+            <span class="val" id="p-trees">—</span>
+          </div>
+          <div class="param-row" id="row-unique">
+            <span title="Unique data points in this bootstrap sample — 本次 bootstrap 中的唯一样本数">Unique in S_t &nbsp;<em>唯一样本数</em></span>
+            <span class="val" id="p-unique">—</span>
+          </div>
+          <div class="param-row" id="row-oob-size">
+            <span title="Out-of-bag points (not in bootstrap sample) — 袋外样本数">OOB size &nbsp;<em>袋外样本数</em></span>
+            <span class="val" id="p-oob-size">—</span>
+          </div>
+          <div class="param-row" id="row-oob-acc">
+            <span title="Individual tree OOB accuracy — 单棵树的袋外准确率">Tree OOB Acc &nbsp;<em>单树袋外准确率</em></span>
+            <span class="val" id="p-oob-acc">—</span>
+          </div>
+          <div class="param-row" id="row-votes">
+            <span title="Each tree's vote for the query point — 每棵树对查询点的预测">Votes &nbsp;<em>各树投票</em></span>
+            <span class="val" id="p-votes">—</span>
+          </div>
+          <div class="param-row" id="row-final-pred">
+            <span title="Majority vote result — 多数投票结果">Final Pred &nbsp;<em>最终预测</em></span>
+            <span class="val" id="p-final-pred">—</span>
+          </div>
+          <div class="param-row" id="row-ens-oob">
+            <span title="Ensemble OOB error — 集成模型袋外误差">OOB Error &nbsp;<em>袋外误差</em></span>
+            <span class="val" id="p-ens-oob">—</span>
+          </div>
+          <div class="param-row" id="row-imp-x1">
+            <span title="Feature importance for x1 — x1 的特征重要性">x1 Importance &nbsp;<em>x1 特征重要性</em></span>
+            <span class="val" id="p-imp-x1">—</span>
+          </div>
+          <div class="param-row" id="row-imp-x2">
+            <span title="Feature importance for x2 — x2 的特征重要性">x2 Importance &nbsp;<em>x2 特征重要性</em></span>
+            <span class="val" id="p-imp-x2">—</span>
+          </div>
+        </div>
+
+        <div id="loss-container">
+          <h3>OOB Accuracy per Tree &nbsp;<span class="subtitle-sm">各树袋外准确率 &nbsp;
+            <span style="color:#6c5ce7">■ T1</span> &nbsp;
+            <span style="color:#00b894">■ T2</span> &nbsp;
+            <span style="color:#e17055">■ T3</span> &nbsp;
+            <span style="color:#3498db">■ Ensemble</span>
+          </span></h3>
+          <div class="chart-wrap">
+            <canvas id="loss-chart"></canvas>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <footer>
+      <button id="btn-reset">⏮ Reset</button>
+      <button id="btn-prev">◀ Prev</button>
+      <button id="btn-next">▶ Next</button>
+      <button id="btn-auto">⏩ Auto Play</button>
+      <button id="btn-end">⏭ End</button>
+    </footer>
+
+  </div>
+
+  <!-- ── Metrics Reference ──────────────────────────────────────────────── -->
+  <section id="metrics-reference">
+    <h2>Random Forest Concepts Reference &nbsp;<span class="subtitle">随机森林核心概念详解</span></h2>
+    <p class="section-sub">Bootstrap sampling, out-of-bag error, majority voting, and feature importance — all concepts shown in the visualisation above.</p>
+
+    <div class="metric-grid">
+
+      <div class="metric-card orange">
+        <div class="mc-title"><span class="mc-abbr">Bootstrap</span><span class="mc-full">Bootstrap Sampling</span></div>
+        <div class="mc-cn">Bootstrap 采样</div>
+        <div class="mc-formula" id="f-bootstrap"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>从 n 个训练点中有放回地抽取 n 次，得到一个大小为 n 的子集 S_t。每次抽取时，每个点被选中的概率均为 1/n。<br><br>
+          <strong>期望覆盖率：</strong>任意一个点被选中至少一次的概率 ≈ 1 − e⁻¹ ≈ 63.2%。剩余 ~36.8% 的点未被选中，称为袋外（OOB）样本。<br><br>
+          <strong>多样性：</strong>每棵树看到不同的子集 → 不同的 CART 分裂 → 不同的决策边界。多样性是集成有效的关键。
+        </div>
+        <span class="mc-range">平均唯一样本：<b>~63%</b>（1/e 规则）</span>
+      </div>
+
+      <div class="metric-card blue">
+        <div class="mc-title"><span class="mc-abbr">OOB Error</span><span class="mc-full">Out-of-Bag Error</span></div>
+        <div class="mc-cn">袋外误差</div>
+        <div class="mc-formula" id="f-oob"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>对每个训练点 xᵢ，只用那些 xᵢ 没有出现在其 bootstrap 样本中的树来预测 xᵢ，然后统计这些"免费"预测的误差率。<br><br>
+          <strong>优势：</strong>无需划分验证集——每棵树的 OOB 样本天然充当验证集。OOB 误差是泛化误差的良好无偏估计，且计算代价极低。<br><br>
+          <strong>集成 OOB：</strong>在所有树训练完毕后，对每个点用其 OOB 树进行多数投票，得到集成 OOB 误差（比单树 OOB 误差更低）。
+        </div>
+        <span class="mc-range">范围：<b>[0, 1]</b>，越小越好</span>
+      </div>
+
+      <div class="metric-card green">
+        <div class="mc-title"><span class="mc-abbr">Majority Vote</span><span class="mc-full">Majority Vote Aggregation</span></div>
+        <div class="mc-cn">多数投票聚合</div>
+        <div class="mc-formula" id="f-vote"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>对新样本 x，让每棵树 T_t 独立预测类别，最终取得票最多的类别作为集成预测结果。<br><br>
+          <strong>为什么有效：</strong>假设每棵树的错误率 ε &lt; 0.5 且树之间相互独立，则当树的数量增加时，集成错误率 → 0（由二项分布尾概率决定）。实际中树不完全独立，但多样性仍能大幅降低方差。<br><br>
+          <strong>可视化：</strong>★ 号查询点周围的 T1/T2/T3 彩色圆点 = 每棵树的投票（蓝=1，红=0）。
+        </div>
+        <span class="mc-range">奇数棵树时：<b>不会平票</b>（推荐）</span>
+      </div>
+
+      <div class="metric-card" style="border-left-color:#6c5ce7">
+        <div class="mc-title"><span class="mc-abbr">Feature Importance</span><span class="mc-full">Mean Decrease in Impurity</span></div>
+        <div class="mc-cn">特征重要性（平均不纯度下降）</div>
+        <div class="mc-formula" id="f-fimp"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>对每个特征 f，统计其在所有树的所有节点中引起的 Gini 不纯度加权下降之和，再按树数平均。<br><br>
+          <strong>权重：</strong>节点的 Gini 增益按该节点样本量 n_v/n 加权——处理大量样本的节点贡献更大。<br><br>
+          <strong>本例：</strong>XOR 数据天生要求 x1 和 x2 同等重要（第一层用其中一个，第二层用另一个），因此两个特征的重要性应接近 50/50。
+        </div>
+        <span class="mc-range">归一化后：<b>各特征之和 = 1</b></span>
+      </div>
+
+      <div class="metric-card red">
+        <div class="mc-title"><span class="mc-abbr">Accuracy</span><span class="mc-full">Classification Accuracy</span></div>
+        <div class="mc-cn">分类准确率</div>
+        <div class="mc-formula" id="f-acc"></div>
+        <div class="mc-body">
+          <strong>含义：</strong>正确分类的样本占总样本的比例。对于集成模型，OOB 准确率 = 1 − OOB 误差，是不需要单独验证集的泛化误差估计。<br><br>
+          <strong>与单棵树的比较：</strong>随机森林通过降低方差（多棵树平均）来提高准确率，但偏差与单棵树相似。在大多数实际数据集上，随机森林的 OOB 准确率远高于任意单棵树的 OOB 准确率。<br><br>
+          <strong>局限：</strong>Accuracy 对类别不平衡数据有误导性，此时应关注 Precision/Recall/F1/AUC-ROC（见逻辑回归页面）。
+        </div>
+        <span class="mc-range">范围：<b>[0, 1]</b>，越大越好</span>
+      </div>
+
+    </div>
+  </section>
+
+  <script src="data/sample_data.js"></script>
+  <script src="js/algorithm.js"></script>
+  <script src="js/visualization.js"></script>
+  <script src="shared/controls.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
